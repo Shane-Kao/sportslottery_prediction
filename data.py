@@ -13,7 +13,7 @@ pd.set_option('display.max_columns', None)
 class Data:
     _DAYS = 90
     _BASE_COLUMNS = ["game_time", "away_score", "home_score", "away_team", "home_team",
-                     "away_team_is_back_to_back", "home_team_is_back_to_back"]
+                     "is_back_to_back", ]
     _TW_DIFF_COLUMNS = ['tw_diff', 'tw_diff_away_odds', 'tw_diff_home_odds', 'tw_diff_home_count', 'tw_away_odds',
                         'tw_home_odds', 'tw_home_count']
     _TW_TOTAL_COLUMNS = ['tw_total', 'tw_under_odds', 'tw_over_odds', 'tw_over_count']
@@ -93,15 +93,22 @@ class Data:
                 (game_time - home_team_last_game_time).days < 2 else False
             last_game_time_dict[away_team] = game_time
             last_game_time_dict[home_team] = game_time
-            df.loc[idx, "away_team_is_back_to_back"] = away_team_is_back_to_back
-            df.loc[idx, "home_team_is_back_to_back"] = home_team_is_back_to_back
+            df.loc[idx, "is_back_to_back"] = "away: {}, home: {}".format(away_team_is_back_to_back, home_team_is_back_to_back)
         return df
 
 
 if __name__ == "__main__":
-    data = Data(alliance="NBA")
-    print(data.incoming[["game_time", "away_team", "home_team",
-                         "away_team_is_back_to_back", "home_team_is_back_to_back"]])
+    data = Data(alliance="NHL冰球")
+    df = data.history
+    # print(df[["game_time", "away_team", "home_team",
+    #                      "away_team_is_back_to_back", "home_team_is_back_to_back"]])
+    df["total_score"] = df["away_score"] + df["home_score"]
+    df["diff"] = df["home_score"] - df["away_score"]
+    print(df["total_score"].mean())
+    print(df["diff"].mean())
+    print(df.groupby(
+        ["is_back_to_back",]
+    ).agg({'total_score': 'mean', 'diff': 'mean', }))
     # df1 = data.get_train(book_maker="tw", type_of_bet="diff")
     # print(df1)
     # df2 = data.get_train(book_maker="tw", type_of_bet="total")
