@@ -12,7 +12,8 @@ pd.set_option('display.max_columns', None)
 
 class Data:
     _DAYS = 90
-    _BASE_COLUMNS = ["game_time", "away_score", "home_score", "away_team", "home_team"]
+    _BASE_COLUMNS = ["game_time", "away_score", "home_score", "away_team", "home_team",
+                     "away_team_is_back_to_back", "home_team_is_back_to_back"]
     _TW_DIFF_COLUMNS = ['tw_diff', 'tw_diff_away_odds', 'tw_diff_home_odds', 'tw_diff_home_count', 'tw_away_odds',
                         'tw_home_odds', 'tw_home_count']
     _TW_TOTAL_COLUMNS = ['tw_total', 'tw_under_odds', 'tw_over_odds', 'tw_over_count']
@@ -55,6 +56,7 @@ class Data:
             data_.append(df_)
         df = pd.concat(data_, axis=0, ignore_index=True)
         df = df.sort_values(by="game_time", ignore_index=True)
+        df = self._get_back_to_back(df)
         return df
 
     @property
@@ -76,14 +78,35 @@ class Data:
         df = df[df[extra_cols[0]].notnull()]
         return df
 
+    @staticmethod
+    def _get_back_to_back(df):
+        last_game_time_dict = {}
+        for idx, row in df.iterrows():
+            game_time = row.game_time.date()
+            away_team = row.away_team
+            home_team = row.home_team
+            away_team_last_game_time = last_game_time_dict.get(away_team)
+            home_team_last_game_time = last_game_time_dict.get(home_team)
+            away_team_is_back_to_back = False if away_team_last_game_time is None else True if \
+                (game_time - away_team_last_game_time).days < 2 else False
+            home_team_is_back_to_back = False if home_team_last_game_time is None else True if \
+                (game_time - home_team_last_game_time).days < 2 else False
+            last_game_time_dict[away_team] = game_time
+            last_game_time_dict[home_team] = game_time
+            df.loc[idx, "away_team_is_back_to_back"] = away_team_is_back_to_back
+            df.loc[idx, "home_team_is_back_to_back"] = home_team_is_back_to_back
+        return df
+
 
 if __name__ == "__main__":
     data = Data(alliance="NBA")
-    df1 = data.get_train(book_maker="tw", type_of_bet="diff")
-    print(df1)
-    df2 = data.get_train(book_maker="tw", type_of_bet="total")
-    print(df2)
-    df3 = data.get_train(book_maker="oversea", type_of_bet="diff")
-    print(df3)
-    df4 = data.get_train(book_maker="oversea", type_of_bet="total")
-    print(df4)
+    print(data.incoming[["game_time", "away_team", "home_team",
+                         "away_team_is_back_to_back", "home_team_is_back_to_back"]])
+    # df1 = data.get_train(book_maker="tw", type_of_bet="diff")
+    # print(df1)
+    # df2 = data.get_train(book_maker="tw", type_of_bet="total")
+    # print(df2)
+    # df3 = data.get_train(book_maker="oversea", type_of_bet="diff")
+    # print(df3)
+    # df4 = data.get_train(book_maker="oversea", type_of_bet="total")
+    # print(df4)
