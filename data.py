@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from datetime import datetime, timedelta
 
+import numpy as np
 import pandas as pd
 
 from configs import DATA_DIR
@@ -15,10 +16,10 @@ class Data:
     _BASE_COLUMNS = ["game_time", "away_score", "home_score", "away_team", "home_team",
                      "is_back_to_back", ]
     _TW_DIFF_COLUMNS = ['tw_diff', 'tw_diff_away_odds', 'tw_diff_home_odds', 'tw_diff_home_count', 'tw_away_odds',
-                        'tw_home_odds', 'tw_home_count']
-    _TW_TOTAL_COLUMNS = ['tw_total', 'tw_under_odds', 'tw_over_odds', 'tw_over_count']
-    _OVERSEA_DIFF_COLUMNS = ['oversea_diff', 'oversea_diff_home_count']
-    _OVERSEA_TOTAL_COLUMNS = ['oversea_total', 'oversea_over_count']
+                        'tw_home_odds', 'tw_home_count', 'tw_diff_result']
+    _TW_TOTAL_COLUMNS = ['tw_total', 'tw_under_odds', 'tw_over_odds', 'tw_over_count', 'tw_total_result']
+    _OVERSEA_DIFF_COLUMNS = ['oversea_diff', 'oversea_diff_home_count', 'oversea_diff_result']
+    _OVERSEA_TOTAL_COLUMNS = ['oversea_total', 'oversea_over_count', 'oversea_total_result']
 
     def __init__(self, alliance):
         self.alliance = alliance
@@ -44,6 +45,19 @@ class Data:
         files_ = sorted(files_, key=lambda x: datetime.strptime(x.split('.')[0], "%Y%m%d"), reverse=True)
         return files_
 
+    @staticmethod
+    def _create_result(df, book_maker="tw", type_of_bet="total"):
+        if type_of_bet == "total":
+            return [j.home_score + j.away_score > j["{}_total".format(book_maker)] if all([
+                pd.notna(j["{}_total".format(book_maker)]), pd.notna(j.home_score), pd.notna(j.away_score)]
+            ) else np.nan for _, j in df.iterrows()]
+        elif type_of_bet == "diff":
+            return [j.home_score + j["{}_diff".format(book_maker)] > j.away_score if all([
+                pd.notna(j["{}_diff".format(book_maker)]), pd.notna(j.home_score), pd.notna(j.away_score)]
+            ) else np.nan for _, j in df.iterrows()]
+        else:
+            raise ValueError
+
     @property
     def raw(self):
         data_ = []
@@ -57,6 +71,10 @@ class Data:
         df = pd.concat(data_, axis=0, ignore_index=True)
         df = df.sort_values(by="game_time", ignore_index=True)
         df = self._get_back_to_back(df)
+        df["tw_total_result"] = self._create_result(df=df, type_of_bet="total", book_maker="tw")
+        df["tw_diff_result"] = self._create_result(df=df, type_of_bet="diff", book_maker="tw")
+        df["oversea_total_result"] = self._create_result(df=df, type_of_bet="total", book_maker="oversea")
+        df["oversea_diff_result"] = self._create_result(df=df, type_of_bet="diff", book_maker="oversea")
         return df
 
     @property
@@ -93,27 +111,15 @@ class Data:
                 (game_time - home_team_last_game_time).days < 2 else False
             last_game_time_dict[away_team] = game_time
             last_game_time_dict[home_team] = game_time
-            df.loc[idx, "is_back_to_back"] = "away: {}, home: {}".format(away_team_is_back_to_back, home_team_is_back_to_back)
+            df.loc[idx, "is_back_to_back"] = "away: {}, home: {}".format(away_team_is_back_to_back,
+                                                                         home_team_is_back_to_back)
         return df
 
 
 if __name__ == "__main__":
-    data = Data(alliance="NHL冰球")
-    df = data.history
-    # print(df[["game_time", "away_team", "home_team",
-    #                      "away_team_is_back_to_back", "home_team_is_back_to_back"]])
-    df["total_score"] = df["away_score"] + df["home_score"]
-    df["diff"] = df["home_score"] - df["away_score"]
-    print(df["total_score"].mean())
-    print(df["diff"].mean())
-    print(df.groupby(
-        ["is_back_to_back",]
-    ).agg({'total_score': 'mean', 'diff': 'mean', }))
-    # df1 = data.get_train(book_maker="tw", type_of_bet="diff")
-    # print(df1)
-    # df2 = data.get_train(book_maker="tw", type_of_bet="total")
-    # print(df2)
-    # df3 = data.get_train(book_maker="oversea", type_of_bet="diff")
-    # print(df3)
-    # df4 = data.get_train(book_maker="oversea", type_of_bet="total")
-    # print(df4)
+    data = Data(alliance="中華職棒")
+    df = data.raw
+
+    print(df[["game_time", "away_score", "home_score", "oversea_diff", "oversea_diff_result"]])
+    print(df[["game_time", "away_score", "home_score", "oversea_total", "oversea_total_result"]])
+    # print(data.history)
