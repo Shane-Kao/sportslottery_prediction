@@ -12,9 +12,10 @@ pd.set_option('display.max_columns', None)
 
 
 class Data:
-    _DAYS = 90
-    _BASE_COLUMNS = ["game_time", "away_score", "home_score", "away_team", "home_team",
-                     "is_back_to_back", ]
+    _DAYS = 60
+    _BASE_COLUMNS = ["game_time", "away_score", "home_score", "away_team", "home_team", "is_back_to_back", ] + \
+                    ["home_team_game_count_last{}".format(i) for i in range(5, 11)] + \
+                    ["away_team_game_count_last{}".format(i) for i in range(5, 11)]
     _TW_DIFF_COLUMNS = ['tw_diff', 'tw_diff_away_odds', 'tw_diff_home_odds', 'tw_diff_home_count', 'tw_away_odds',
                         'tw_home_odds', 'tw_home_count', 'tw_diff_result']
     _TW_TOTAL_COLUMNS = ['tw_total', 'tw_under_odds', 'tw_over_odds', 'tw_over_count', 'tw_total_result']
@@ -75,6 +76,8 @@ class Data:
         df["tw_diff_result"] = self._create_result(df=df, type_of_bet="diff", book_maker="tw")
         df["oversea_total_result"] = self._create_result(df=df, type_of_bet="total", book_maker="oversea")
         df["oversea_diff_result"] = self._create_result(df=df, type_of_bet="diff", book_maker="oversea")
+        for i in range(5, 11):
+            df = self._get_game_counts(df, last_n=i)
         return df
 
     @property
@@ -115,11 +118,30 @@ class Data:
                                                                          home_team_is_back_to_back)
         return df
 
+    @staticmethod
+    def _get_game_counts(df, last_n=5):
+        df["_game_date"] = df["game_time"].apply(lambda x: x.date())
+        for idx, row in df.iterrows():
+            game_time = row._game_date
+            df_ = df[
+                (df["_game_date"] > game_time - timedelta(days=last_n)) &
+                (df["_game_date"] <= game_time)
+            ]
+            home_team = row.home_team
+            away_team = row.away_team
+            home_team_count = df_[(df_["home_team"] == home_team) | (df_["away_team"] == home_team)].shape[0]/last_n
+            away_team_count = df_[(df_["home_team"] == away_team) | (df_["away_team"] == away_team)].shape[0]/last_n
+            df.loc[idx, "home_team_game_count_last{}".format(last_n)] = home_team_count
+            df.loc[idx, "away_team_game_count_last{}".format(last_n)] = away_team_count
+        return df
+
 
 if __name__ == "__main__":
-    data = Data(alliance="中華職棒")
+    data = Data(alliance="SBL")
     df = data.raw
-
-    print(df[["game_time", "away_score", "home_score", "oversea_diff", "oversea_diff_result"]])
-    print(df[["game_time", "away_score", "home_score", "oversea_total", "oversea_total_result"]])
+    df = Data._get_game_counts(df, last_n=5)
+    print(df[["game_time", "home_team", "away_team", "away_team_game_count_last5", ]])
+    # print(df[["away_score", "home_score", "tw_total", "tw_total_result"]])
+    # print(df[["game_time", "away_score", "home_score", "oversea_diff", "oversea_diff_result"]])
+    # print(df[["game_time", "away_score", "home_score", "oversea_total", "oversea_total_result"]])
     # print(data.history)
