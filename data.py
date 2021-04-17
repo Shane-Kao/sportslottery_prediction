@@ -16,11 +16,16 @@ class Data:
     _BASE_COLUMNS = ["game_time", "away_score", "home_score", "away_team", "home_team", "is_back_to_back", ] + \
                     ["home_team_game_count_last{}".format(i) for i in range(5, 11)] + \
                     ["away_team_game_count_last{}".format(i) for i in range(5, 11)]
+
     _TW_DIFF_COLUMNS = ['tw_diff', 'tw_diff_away_odds', 'tw_diff_home_odds', 'tw_diff_home_count', 'tw_away_odds',
-                        'tw_home_odds', 'tw_home_count', 'tw_diff_result']
-    _TW_TOTAL_COLUMNS = ['tw_total', 'tw_under_odds', 'tw_over_odds', 'tw_over_count', 'tw_total_result']
-    _OVERSEA_DIFF_COLUMNS = ['oversea_diff', 'oversea_diff_home_count', 'oversea_diff_result']
-    _OVERSEA_TOTAL_COLUMNS = ['oversea_total', 'oversea_over_count', 'oversea_total_result']
+                        'tw_home_odds', 'tw_home_count', 'tw_diff_result'] + ["away_strk", "home_strk", ] + \
+                        ["home_strk_tw_diff", "away_strk_tw_diff"]
+    _TW_TOTAL_COLUMNS = ['tw_total', 'tw_under_odds', 'tw_over_odds', 'tw_over_count', 'tw_total_result']+ \
+                             ["home_strk_tw_total", "away_strk_tw_total"]
+    _OVERSEA_DIFF_COLUMNS = ['oversea_diff', 'oversea_diff_home_count', 'oversea_diff_result'] + \
+                            ["away_strk", "home_strk"] + ["home_strk_oversea_diff", "away_strk_oversea_diff"]
+    _OVERSEA_TOTAL_COLUMNS = ['oversea_total', 'oversea_over_count', 'oversea_total_result'] + \
+                             ["home_strk_oversea_total", "away_strk_oversea_total"]
 
     def __init__(self, alliance):
         self.alliance = alliance
@@ -78,6 +83,7 @@ class Data:
         df["oversea_diff_result"] = self._create_result(df=df, type_of_bet="diff", book_maker="oversea")
         for i in range(5, 11):
             df = self._get_game_counts(df, last_n=i)
+        df = self._get_strk(df)
         return df
 
     @property
@@ -135,12 +141,87 @@ class Data:
             df.loc[idx, "away_team_game_count_last{}".format(last_n)] = away_team_count
         return df
 
+    @staticmethod
+    def _get_strk(df):
+        strk_dict = {}
+        strk_tw_diff_dict = {}
+        strk_oversea_diff_dict = {}
+        strk_tw_total_dict = {}
+        strk_oversea_total_dict = {}
+        for idx, row in df.iterrows():
+            home_team = row.home_team
+            away_team = row.away_team
+            tw_diff_result = row.tw_diff_result
+            oversea_diff_result = row.oversea_diff_result
+            tw_total_result = row.tw_total_result
+            oversea_total_result = row.oversea_total_result
+            df.loc[idx, "home_strk_tw_diff"] = strk_tw_diff_dict.get(home_team, 0)
+            df.loc[idx, "away_strk_tw_diff"] = strk_tw_diff_dict.get(away_team, 0)
+            df.loc[idx, "home_strk_oversea_diff"] = strk_oversea_diff_dict.get(home_team, 0)
+            df.loc[idx, "away_strk_oversea_diff"] = strk_oversea_diff_dict.get(away_team, 0)
+            
+            df.loc[idx, "home_strk_tw_total"] = strk_tw_total_dict.get(home_team, 0)
+            df.loc[idx, "away_strk_tw_total"] = strk_tw_total_dict.get(away_team, 0)
+            df.loc[idx, "home_strk_oversea_total"] = strk_oversea_total_dict.get(home_team, 0)
+            df.loc[idx, "away_strk_oversea_total"] = strk_oversea_total_dict.get(away_team, 0)
+            
+            df.loc[idx, "home_strk"] = strk_dict.get(home_team, 0)
+            df.loc[idx, "away_strk"] = strk_dict.get(away_team, 0)
+            home_score = row.home_score
+            away_score = row.away_score
+            if isinstance(oversea_diff_result, bool):
+                if oversea_diff_result:
+                    strk_oversea_diff_dict[home_team] = strk_oversea_diff_dict.get(home_team, 0) + 1 if strk_oversea_diff_dict.get(home_team, 0) > 0 else 1
+                    strk_oversea_diff_dict[away_team] = strk_oversea_diff_dict.get(away_team, 0) - 1 if strk_oversea_diff_dict.get(away_team, 0) < 0 else -1
+                else:
+                    strk_oversea_diff_dict[home_team] = strk_oversea_diff_dict.get(home_team, 0) - 1 if strk_oversea_diff_dict.get(home_team, 0) < 0 else -1
+                    strk_oversea_diff_dict[away_team] = strk_oversea_diff_dict.get(away_team, 0) + 1 if strk_oversea_diff_dict.get(away_team, 0) > 0 else 1
+            else:
+                pass
+            if isinstance(tw_diff_result, bool):
+                if tw_diff_result:
+                    strk_tw_diff_dict[home_team] = strk_tw_diff_dict.get(home_team, 0) + 1 if strk_tw_diff_dict.get(home_team, 0) > 0 else 1
+                    strk_tw_diff_dict[away_team] = strk_tw_diff_dict.get(away_team, 0) - 1 if strk_tw_diff_dict.get(away_team, 0) < 0 else -1
+                else:
+                    strk_tw_diff_dict[home_team] = strk_tw_diff_dict.get(home_team, 0) - 1 if strk_tw_diff_dict.get(home_team, 0) < 0 else -1
+                    strk_tw_diff_dict[away_team] = strk_tw_diff_dict.get(away_team, 0) + 1 if strk_tw_diff_dict.get(away_team, 0) > 0 else 1
+            else:
+                pass
+            if isinstance(oversea_total_result, bool):
+                if oversea_total_result:
+                    strk_oversea_total_dict[home_team] = strk_oversea_total_dict.get(home_team, 0) + 1 if strk_oversea_total_dict.get(home_team, 0) > 0 else 1
+                    strk_oversea_total_dict[away_team] = strk_oversea_total_dict.get(away_team, 0) + 1 if strk_oversea_total_dict.get(away_team, 0) > 0 else 1
+                else:
+                    strk_oversea_total_dict[home_team] = strk_oversea_total_dict.get(home_team, 0) - 1 if strk_oversea_total_dict.get(home_team, 0) < 0 else -1
+                    strk_oversea_total_dict[away_team] = strk_oversea_total_dict.get(away_team, 0) - 1 if strk_oversea_total_dict.get(away_team, 0) < 0 else -1
+            else:
+                pass
+            if isinstance(tw_total_result, bool):
+                if tw_total_result:
+                    strk_tw_total_dict[home_team] = strk_tw_total_dict.get(home_team, 0) + 1 if strk_tw_total_dict.get(home_team, 0) > 0 else 1
+                    strk_tw_total_dict[away_team] = strk_tw_total_dict.get(away_team, 0) + 1 if strk_tw_total_dict.get(away_team, 0) > 0 else 1
+                else:
+                    strk_tw_total_dict[home_team] = strk_tw_total_dict.get(home_team, 0) - 1 if strk_tw_total_dict.get(home_team, 0) < 0 else -1
+                    strk_tw_total_dict[away_team] = strk_tw_total_dict.get(away_team, 0) - 1 if strk_tw_total_dict.get(away_team, 0) < 0 else -1
+            else:
+                pass
+            if home_score > away_score:
+                strk_dict[home_team] = strk_dict.get(home_team, 0) + 1 if strk_dict.get(home_team, 0) > 0 else 1
+                strk_dict[away_team] = strk_dict.get(away_team, 0) - 1 if strk_dict.get(away_team, 0) < 0 else -1
+            elif home_score < away_score:
+                strk_dict[home_team] = strk_dict.get(home_team, 0) - 1 if strk_dict.get(home_team, 0) < 0 else -1
+                strk_dict[away_team] = strk_dict.get(away_team, 0) + 1 if strk_dict.get(away_team, 0) > 0 else 1
+            else:
+                pass
+        return df
+
 
 if __name__ == "__main__":
-    data = Data(alliance="SBL")
+    data = Data(alliance="中華職棒")
     df = data.raw
-    df = Data._get_game_counts(df, last_n=5)
-    print(df[["game_time", "home_team", "away_team", "away_team_game_count_last5", ]])
+    # df = Data._get_strk(df)
+    print(df[["away_team", "home_team", "tw_total_result",
+              "away_strk_tw_total", ]])
     # print(df[["away_score", "home_score", "tw_total", "tw_total_result"]])
     # print(df[["game_time", "away_score", "home_score", "oversea_diff", "oversea_diff_result"]])
     # print(df[["game_time", "away_score", "home_score", "oversea_total", "oversea_total_result"]])

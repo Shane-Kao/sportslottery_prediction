@@ -5,6 +5,7 @@ from sklearn.feature_selection import VarianceThreshold
 
 from features.back_to_back_encoder import back_to_back_encoder
 from features.team_encoder import team_encoder
+from features.strk_encoder import strk_encoder
 from features.game_count_encoder import game_count_encoder
 from features.weekday_encoder import weekday_encoder
 
@@ -13,6 +14,7 @@ feature_union = FeatureUnion([
     ("team_encoder", team_encoder),
     ("back_to_back_encoder", back_to_back_encoder),
     ("game_count_encoder", game_count_encoder),
+    ("strk_encoder", strk_encoder)
 ], transformer_weights=None)
 
 polynomial_features = PolynomialFeatures(

@@ -11,7 +11,7 @@ def _select_last_n(df, last_n):
 
 game_count_encoder = FunctionTransformer(
     func=_select_last_n,
-    kw_args={"last_n": 8}
+    kw_args={"last_n": 5}
 )
 
 
