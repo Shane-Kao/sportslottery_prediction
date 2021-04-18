@@ -9,6 +9,8 @@ from features.strk_encoder import strk_encoder
 from features.game_count_encoder import game_count_encoder
 from features.weekday_encoder import weekday_encoder
 from features.stats_encoder import stats_encoder
+from features.betting_encoder import betting_encoder
+from features.betting_count_encoder import betting_count_encoder
 
 feature_union = FeatureUnion(
     transformer_list=[
@@ -17,7 +19,9 @@ feature_union = FeatureUnion(
     ("back_to_back_encoder", back_to_back_encoder),
     ("game_count_encoder", game_count_encoder),
     ("strk_encoder", strk_encoder),
-    ("stats_encoder", stats_encoder)
+    ("stats_encoder", stats_encoder),
+    ("betting_encoder", betting_encoder),
+    ("betting_count_encoder", betting_count_encoder),
 ], transformer_weights=None)
 
 polynomial_features = PolynomialFeatures(
