@@ -11,6 +11,7 @@ from features.weekday_encoder import weekday_encoder
 from features.stats_encoder import stats_encoder
 from features.betting_encoder import betting_encoder
 from features.betting_count_encoder import betting_count_encoder
+from features.odds_encoder import odds_encoder
 
 feature_union = FeatureUnion(
     transformer_list=[
@@ -22,6 +23,7 @@ feature_union = FeatureUnion(
     ("stats_encoder", stats_encoder),
     ("betting_encoder", betting_encoder),
     ("betting_count_encoder", betting_count_encoder),
+    ("odds_encoder", odds_encoder),
 ], transformer_weights=None)
 
 polynomial_features = PolynomialFeatures(
