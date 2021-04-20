@@ -46,7 +46,7 @@ if __name__ == "__main__":
         n_jobs=-1,
         verbose=1,
         cv=ps,
-        scoring=make_scorer(precision_score, average="weighted"),
+        scoring=make_scorer(precision_score, average="micro"),
         refit=False,
     )
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     y_pred = pipeline.predict(X_test)
     y_pred_proba = pipeline.predict_proba(X_test)
     # print(roc_auc_score(y_true=y_test, y_score=y_pred_proba[:, 0]))
-    print(precision_score(y_true=y_test, y_pred=y_pred, average="weighted"))
+    print(precision_score(y_true=y_test, y_pred=y_pred, average="micro"))
 
     y_pred_proba = pipeline.predict_proba(X_test)
     # print(roc_auc_score(y_true=y_test, y_score=y_pred))
