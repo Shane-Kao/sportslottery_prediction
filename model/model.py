@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Shane_Kao'
+from datetime import datetime
+
 from sklearn.model_selection import PredefinedSplit, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectPercentile
@@ -94,12 +96,13 @@ class Model:
             setattr(self, "p_micro_", p_micro)
             setattr(self, "p0_", p0)
             setattr(self, "p1_", p1)
+            setattr(self, "create_time_", str(datetime.now()))
         else:
             pass
 
 
 if __name__ == '__main__':
-    model = Model(alliance="日本職籃", book_maker="tw", type_of_bet="diff")
+    model = Model(alliance="中國職籃", book_maker="oversea", type_of_bet="diff")
     model.train()
     print(model.start_date_)
     print(model.best_params_)
