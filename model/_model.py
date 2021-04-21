@@ -9,7 +9,7 @@ from sklearn.metrics import make_scorer, precision_score
 
 from data import Data
 from feature_union import features
-from params import get_base_params
+from model.params import get_base_params
 
 
 class Model:
@@ -102,16 +102,22 @@ class Model:
 
 
 if __name__ == '__main__':
-    model = Model(alliance="中國職籃", book_maker="oversea", type_of_bet="diff")
+    model = Model(alliance="SBL", book_maker="tw", type_of_bet="total")
     model.train()
+
+
+    import dill
+
+    dill.dump(model, file=open("model.pickle", "wb"))
+    model = dill.load(file=open("model.pickle", "rb"))
+
+
+
     print(model.start_date_)
+    print(model.create_time_)
     print(model.best_params_)
     print(model.best_score_)
     print(model.p_micro_)
     print(model.p0_)
     print(model.p1_)
     print(model.test_results_)
-
-
-
-
