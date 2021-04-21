@@ -100,19 +100,29 @@ class Model:
         else:
             pass
 
+    def save(self):
+        pass
+
 
 if __name__ == '__main__':
-    model = Model(alliance="SBL", book_maker="tw", type_of_bet="total")
+    from model._model import Model
+    model = Model(alliance="NBA", book_maker="oversea", type_of_bet="total")
     model.train()
 
 
+    result_dict = {
+        "start_date": model.start_date_,
+        "create_time": model.create_time_,
+        "best_score": model.best_score_,
+        "p0": model.p0_,
+        "p1": model.p1_,
+        "test_results": list(model.test_results_.T.to_dict().values()),
+        "model": model.PIPELINE
+    }
     import dill
-
-    dill.dump(model, file=open("model.pickle", "wb"))
-    model = dill.load(file=open("model.pickle", "rb"))
-
-
-
+    import pickle
+    pickle.dump(result_dict, open("model.pkl", "wb"))
+    dill.dump(model.PIPELINE, open("model.pkl", "wb"))
     print(model.start_date_)
     print(model.create_time_)
     print(model.best_params_)
