@@ -36,6 +36,7 @@ class Model:
         if train_data.empty or train_data.shape[0] < self._MIN_COUNT:
             return {"status": False, "msg": " The data is insufficient.", }
         try:
+            setattr(self, "start_date_", str(train_data.iloc[0, 0].date()))
             target = train_data["{}_{}_result".format(self.book_maker, self.type_of_bet)].astype(int)
             test_size = int(train_data.shape[0] * self.TEST_SIZE[0])
             test_size = self.TEST_SIZE[1] if test_size < self.TEST_SIZE[1] else self.TEST_SIZE[2] if \
@@ -78,6 +79,18 @@ class Model:
             p_micro = precision_score(y_true=y_test, y_pred=y_pred, average="micro")
             p0 = precision_score(y_true=y_test, y_pred=y_pred, pos_label=0)
             p1 = precision_score(y_true=y_test, y_pred=y_pred, pos_label=1)
+            X_test.loc[:, "pred_"] = y_pred
+            X_test.loc[:, "result"] = X_test.apply(lambda x: "準" if x.pred_ == x["{}_{}_result".
+                                            format(self.book_maker, self.type_of_bet)] else "冏",
+                                            axis=1)
+            if self.type_of_bet == "total":
+                X_test.loc[:, "pred"] = ["大" if i else "小" for i in y_pred]
+            else:
+                X_test.loc[:, "pred"] = X_test.apply(lambda x: "主" if x.pred_ else "客", axis=1)
+            test_results = X_test[["game_time", "away_team", "home_team",
+                                   "{}_{}".format(self.book_maker, self.type_of_bet),
+                                   "pred", "result"]]
+            setattr(self, "test_results_", test_results)
             setattr(self, "p_micro_", p_micro)
             setattr(self, "p0_", p0)
             setattr(self, "p1_", p1)
@@ -86,13 +99,15 @@ class Model:
 
 
 if __name__ == '__main__':
-    model = Model(alliance="NBA", book_maker="tw", type_of_bet="total")
+    model = Model(alliance="日本職籃", book_maker="tw", type_of_bet="diff")
     model.train()
+    print(model.start_date_)
     print(model.best_params_)
     print(model.best_score_)
     print(model.p_micro_)
     print(model.p0_)
     print(model.p1_)
+    print(model.test_results_)
 
 
 
