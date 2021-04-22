@@ -28,7 +28,7 @@ class Model:
 
     N_ITER = 500
 
-    N_JOBS = -1
+    N_JOBS = 4
 
     _MIN_COUNT = 20
 
@@ -55,9 +55,9 @@ class Model:
             predefined_split = PredefinedSplit(test_fold)
             setattr(self, "predefined_split_", predefined_split)
             params = get_base_params(self.book_maker, self.type_of_bet)
-            grid_search_cv = RandomizedSearchCV(
+            rand_search_cv = RandomizedSearchCV(
                 estimator=self.PIPELINE,
-                param_grid=params,
+                param_distributions=params,
                 n_jobs=self.N_JOBS,
                 verbose=0,
                 cv=self.predefined_split_,
@@ -65,9 +65,9 @@ class Model:
                 refit=False,
                 n_iter=self.N_ITER,
             )
-            grid_search_cv.fit(train_data, target)
-            setattr(self, "best_score_", grid_search_cv.best_score_)
-            setattr(self, "best_params_", grid_search_cv.best_params_)
+            rand_search_cv.fit(train_data, target)
+            setattr(self, "best_score_", rand_search_cv.best_score_)
+            setattr(self, "best_params_", rand_search_cv.best_params_)
             return {"status": True, "train_data": train_data, "target": target}
         except Exception as e:
             return {"status": False, "msg": str(e), }
