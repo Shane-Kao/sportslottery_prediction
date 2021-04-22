@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Shane_Kao'
+import os
 from datetime import datetime
 
-from sklearn.model_selection import PredefinedSplit, GridSearchCV
+import dill
+from sklearn.model_selection import PredefinedSplit, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectPercentile
 from sklearn.metrics import make_scorer, precision_score
@@ -10,6 +12,7 @@ from sklearn.metrics import make_scorer, precision_score
 from data import Data
 from feature_union import features
 from model.params import get_base_params
+from configs import MODEL_DIR
 
 
 class Model:
@@ -22,6 +25,8 @@ class Model:
     ])
 
     SCORING = make_scorer(precision_score, average="micro")
+
+    N_ITER = 500
 
     N_JOBS = -1
 
@@ -50,14 +55,15 @@ class Model:
             predefined_split = PredefinedSplit(test_fold)
             setattr(self, "predefined_split_", predefined_split)
             params = get_base_params(self.book_maker, self.type_of_bet)
-            grid_search_cv = GridSearchCV(
+            grid_search_cv = RandomizedSearchCV(
                 estimator=self.PIPELINE,
                 param_grid=params,
                 n_jobs=self.N_JOBS,
-                verbose=11,
+                verbose=0,
                 cv=self.predefined_split_,
                 scoring=self.SCORING,
                 refit=False,
+                n_iter=self.N_ITER,
             )
             grid_search_cv.fit(train_data, target)
             setattr(self, "best_score_", grid_search_cv.best_score_)
@@ -97,37 +103,45 @@ class Model:
             setattr(self, "p0_", p0)
             setattr(self, "p1_", p1)
             setattr(self, "create_time_", str(datetime.now()))
+            return True
         else:
-            pass
+            return False
 
     def save(self):
-        pass
+        model_path = os.path.join(MODEL_DIR, "{}_{}_{}".format(self.alliance, self.book_maker,
+                                                               self.type_of_bet))
+        result_dict = {
+            "start_date": self.start_date_,
+            "create_time": self.create_time_,
+            "best_score": self.best_score_,
+            "p_micro": self.p_micro_,
+            "p0": self.p0_,
+            "p1": self.p1_,
+            "test_results": list(self.test_results_.T.to_dict().values()),
+            "model": self.PIPELINE
+        }
+        dill.dump(result_dict, open(model_path, "wb"))
+        return None
 
 
 if __name__ == '__main__':
     from model._model import Model
-    model = Model(alliance="NBA", book_maker="oversea", type_of_bet="total")
-    model.train()
+    from configs import DATA_DIR
+
+    alliances = os.listdir(DATA_DIR)
+    book_makers = ['tw', 'oversea']
+    type_of_bets = ['diff', 'total']
+
+    for alliance in alliances:
+        for book_maker in book_makers:
+            for type_of_bet in type_of_bets:
+                model = Model(
+                    alliance=alliance,
+                    book_maker=book_maker,
+                    type_of_bet=type_of_bet
+                )
+                result = model.train()
+                if result:
+                    model.save()
 
 
-    result_dict = {
-        "start_date": model.start_date_,
-        "create_time": model.create_time_,
-        "best_score": model.best_score_,
-        "p0": model.p0_,
-        "p1": model.p1_,
-        "test_results": list(model.test_results_.T.to_dict().values()),
-        "model": model.PIPELINE
-    }
-    import dill
-    import pickle
-    pickle.dump(result_dict, open("model.pkl", "wb"))
-    dill.dump(model.PIPELINE, open("model.pkl", "wb"))
-    print(model.start_date_)
-    print(model.create_time_)
-    print(model.best_params_)
-    print(model.best_score_)
-    print(model.p_micro_)
-    print(model.p0_)
-    print(model.p1_)
-    print(model.test_results_)
