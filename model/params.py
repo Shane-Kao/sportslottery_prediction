@@ -32,11 +32,11 @@ def get_base_params(book_maker, type_of_bet):
                 {"last_n": 9}, {"last_n": 10}
             ),
             'clf': (
-                LogisticRegression(),
+                LogisticRegression(max_iter=10000),
                 DecisionTreeClassifier(random_state=42),
                 ExtraTreeClassifier(random_state=42),
                 KNeighborsClassifier(),
-                MLPClassifier(random_state=42),
+                MLPClassifier(random_state=42, max_iter=10000),
                 RandomForestClassifier(random_state=42),
                 GradientBoostingClassifier(random_state=42),
                 ExtraTreesClassifier(random_state=42),
@@ -45,7 +45,7 @@ def get_base_params(book_maker, type_of_bet):
                 RandomForestClassifier(random_state=42),
             )
         }
-    if book_maker == "oversea":
-        param.pop("features__feature_union__odds_encoder__kw_args")
-        param["features__feature_union__odds_encoder"] = ('drop', )
+    # if book_maker == "oversea":
+    #     param.pop("features__feature_union__odds_encoder__kw_args")
+        # param["features__feature_union__odds_encoder"] = ('drop', )
     return param

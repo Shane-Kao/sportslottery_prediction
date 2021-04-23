@@ -6,7 +6,7 @@ import pandas as pd
 from data import Data
 from configs import MODEL_DIR
 
-alliance = "MLB"
+alliance = "歐洲職籃"
 book_maker = "tw"
 type_of_bet = "diff"
 

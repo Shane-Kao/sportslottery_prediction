@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 import dill
+import pandas as pd
 from sklearn.model_selection import PredefinedSplit, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectPercentile
@@ -16,6 +17,8 @@ from configs import MODEL_DIR
 
 
 class Model:
+    pd.options.mode.chained_assignment = None
+
     TEST_SIZE = (0.1, 10, 100, )
 
     PIPELINE = Pipeline([
@@ -26,9 +29,9 @@ class Model:
 
     SCORING = make_scorer(precision_score, average="micro")
 
-    N_ITER = 500
+    N_ITER = 100
 
-    N_JOBS = 4
+    N_JOBS = -1
 
     _MIN_COUNT = 20
 
@@ -42,35 +45,33 @@ class Model:
         train_data = raw_data.get_train(book_maker=self.book_maker, type_of_bet=self.type_of_bet)
         if train_data.empty or train_data.shape[0] < self._MIN_COUNT:
             return {"status": False, "msg": " The data is insufficient.", }
-        try:
-            setattr(self, "start_date_", str(train_data.iloc[0, 0].date()))
-            target = train_data["{}_{}_result".format(self.book_maker, self.type_of_bet)].astype(int)
-            test_size = int(train_data.shape[0] * self.TEST_SIZE[0])
-            test_size = self.TEST_SIZE[1] if test_size < self.TEST_SIZE[1] else self.TEST_SIZE[2] if \
+        setattr(self, "start_date_", str(train_data.iloc[0, 0].date()))
+        target = train_data["{}_{}_result".format(self.book_maker, self.type_of_bet)].astype(int)
+        test_size = int(train_data.shape[0] * self.TEST_SIZE[0])
+        test_size = self.TEST_SIZE[1] if test_size < self.TEST_SIZE[1] else self.TEST_SIZE[2] if \
                 test_size > self.TEST_SIZE[2] else test_size
-            train_size = train_data.shape[0] - test_size
-            setattr(self, "train_size_", train_size)
-            setattr(self, "test_size_", test_size)
-            test_fold = [-1 for _ in range(train_size)] + [0 for _ in range(test_size)]
-            predefined_split = PredefinedSplit(test_fold)
-            setattr(self, "predefined_split_", predefined_split)
-            params = get_base_params(self.book_maker, self.type_of_bet)
-            rand_search_cv = RandomizedSearchCV(
+        train_size = train_data.shape[0] - test_size
+        setattr(self, "train_size_", train_size)
+        setattr(self, "test_size_", test_size)
+        test_fold = [-1 for _ in range(train_size)] + [0 for _ in range(test_size)]
+        predefined_split = PredefinedSplit(test_fold)
+        setattr(self, "predefined_split_", predefined_split)
+        params = get_base_params(self.book_maker, self.type_of_bet)
+        rand_search_cv = RandomizedSearchCV(
                 estimator=self.PIPELINE,
                 param_distributions=params,
                 n_jobs=self.N_JOBS,
-                verbose=0,
+                verbose=11,
                 cv=self.predefined_split_,
                 scoring=self.SCORING,
                 refit=False,
                 n_iter=self.N_ITER,
-            )
-            rand_search_cv.fit(train_data, target)
-            setattr(self, "best_score_", rand_search_cv.best_score_)
-            setattr(self, "best_params_", rand_search_cv.best_params_)
-            return {"status": True, "train_data": train_data, "target": target}
-        except Exception as e:
-            return {"status": False, "msg": str(e), }
+        )
+        rand_search_cv.fit(train_data, target)
+        setattr(self, "best_score_", rand_search_cv.best_score_)
+        setattr(self, "best_params_", rand_search_cv.best_params_)
+        return {"status": True, "train_data": train_data, "target": target}
+
 
     def train(self):
         result_dict = self._get_best()
@@ -135,6 +136,7 @@ if __name__ == '__main__':
     for alliance in alliances:
         for book_maker in book_makers:
             for type_of_bet in type_of_bets:
+                print(alliance, book_maker, type_of_bet)
                 model = Model(
                     alliance=alliance,
                     book_maker=book_maker,
