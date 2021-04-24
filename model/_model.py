@@ -39,18 +39,26 @@ class Model:
         self.alliance = alliance
         self.book_maker = book_maker
         self.type_of_bet = type_of_bet
+        self.model_path = os.path.join(MODEL_DIR, "{}_{}_{}".format(self.alliance, self.book_maker,
+                                                               self.type_of_bet))
 
     def _get_best(self):
         raw_data = Data(alliance=self.alliance)
         train_data = raw_data.get_train(book_maker=self.book_maker, type_of_bet=self.type_of_bet)
         if train_data.empty or train_data.shape[0] < self._MIN_COUNT:
-            return {"status": False, "msg": " The data is insufficient.", }
+            return {"status": False, "msg": "The data is insufficient.", }
         setattr(self, "start_date_", str(train_data.iloc[0, 0].date()))
         target = train_data["{}_{}_result".format(self.book_maker, self.type_of_bet)].astype(int)
         test_size = int(train_data.shape[0] * self.TEST_SIZE[0])
         test_size = self.TEST_SIZE[1] if test_size < self.TEST_SIZE[1] else self.TEST_SIZE[2] if \
                 test_size > self.TEST_SIZE[2] else test_size
         train_size = train_data.shape[0] - test_size
+        try:
+            current_model = dill.load(open(os.path.join(MODEL_DIR, self.model_path), "rb"))
+        except FileNotFoundError:
+            current_model = {}
+        if current_model.get("train_size") == train_size and current_model.get("test_size") == test_size:
+            return {"status": False, "msg": "No update.", }
         setattr(self, "train_size_", train_size)
         setattr(self, "test_size_", test_size)
         test_fold = [-1 for _ in range(train_size)] + [0 for _ in range(test_size)]
@@ -61,7 +69,7 @@ class Model:
                 estimator=self.PIPELINE,
                 param_distributions=params,
                 n_jobs=self.N_JOBS,
-                verbose=11,
+                verbose=False,
                 cv=self.predefined_split_,
                 scoring=self.SCORING,
                 refit=False,
@@ -71,7 +79,6 @@ class Model:
         setattr(self, "best_score_", rand_search_cv.best_score_)
         setattr(self, "best_params_", rand_search_cv.best_params_)
         return {"status": True, "train_data": train_data, "target": target}
-
 
     def train(self):
         result_dict = self._get_best()
@@ -106,14 +113,15 @@ class Model:
             setattr(self, "create_time_", str(datetime.now()))
             return True
         else:
+            print(result_dict)
             return False
 
     def save(self):
-        model_path = os.path.join(MODEL_DIR, "{}_{}_{}".format(self.alliance, self.book_maker,
-                                                               self.type_of_bet))
         result_dict = {
             "start_date": self.start_date_,
             "create_time": self.create_time_,
+            "train_size": self.train_size_,
+            "test_size": self.test_size_,
             "best_score": self.best_score_,
             "p_micro": self.p_micro_,
             "p0": self.p0_,
@@ -121,7 +129,7 @@ class Model:
             "test_results": list(self.test_results_.T.to_dict().values()),
             "model": self.PIPELINE
         }
-        dill.dump(result_dict, open(model_path, "wb"))
+        dill.dump(result_dict, open(self.model_path, "wb"))
         return None
 
 
