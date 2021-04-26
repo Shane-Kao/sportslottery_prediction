@@ -32,11 +32,11 @@ def get_base_params(book_maker, type_of_bet):
                 {"last_n": 9}, {"last_n": 10}
             ),
             'clf': (
-                LogisticRegression(max_iter=10000),
+                LogisticRegression(max_iter=100000),
                 DecisionTreeClassifier(random_state=42),
                 ExtraTreeClassifier(random_state=42),
                 KNeighborsClassifier(),
-                MLPClassifier(random_state=42, max_iter=10000),
+                MLPClassifier(random_state=42, max_iter=100000),
                 RandomForestClassifier(random_state=42),
                 GradientBoostingClassifier(random_state=42),
                 ExtraTreesClassifier(random_state=42),

@@ -52,6 +52,7 @@ class Model:
         test_size = int(train_data.shape[0] * self.TEST_SIZE[0])
         test_size = self.TEST_SIZE[1] if test_size < self.TEST_SIZE[1] else self.TEST_SIZE[2] if \
                 test_size > self.TEST_SIZE[2] else test_size
+        validation_size = int(test_size/2)
         train_size = train_data.shape[0] - test_size
         try:
             current_model = dill.load(open(os.path.join(MODEL_DIR, self.model_path), "rb"))
@@ -61,7 +62,8 @@ class Model:
             return {"status": False, "msg": "No update.", }
         setattr(self, "train_size_", train_size)
         setattr(self, "test_size_", test_size)
-        test_fold = [-1 for _ in range(train_size)] + [0 for _ in range(test_size)]
+        test_size -= validation_size
+        test_fold = [-1 for _ in range(train_size)] + [0 for _ in range(validation_size)]
         predefined_split = PredefinedSplit(test_fold)
         setattr(self, "predefined_split_", predefined_split)
         params = get_base_params(self.book_maker, self.type_of_bet)
@@ -75,35 +77,43 @@ class Model:
                 refit=False,
                 n_iter=self.N_ITER,
         )
-        rand_search_cv.fit(train_data, target)
+        rand_search_cv.fit(train_data.iloc[:-test_size, :], target.iloc[:-test_size])
         setattr(self, "best_score_", rand_search_cv.best_score_)
         setattr(self, "best_params_", rand_search_cv.best_params_)
-        return {"status": True, "train_data": train_data, "target": target}
+        return {
+            "status": True,
+            "train_data": train_data.iloc[:-test_size, :],
+            "train_target": target.iloc[:-test_size],
+            "test_data": train_data.iloc[-test_size:, :],
+            "test_target": target.iloc[-test_size:],
+        }
 
     def train(self):
         result_dict = self._get_best()
         status = result_dict["status"]
         if status:
             train_data = result_dict["train_data"]
-            target = result_dict["target"]
+            test_data = result_dict["test_data"]
+            train_target = result_dict["train_target"]
+            test_target = result_dict["test_target"]
             train_index, test_index = list(self.predefined_split_.split())[0]
-            X_train, X_test = train_data.iloc[train_index, :], train_data.iloc[test_index, :]
-            y_train, y_test = target.iloc[train_index,], target.iloc[test_index,]
+            X_train, _ = train_data.iloc[train_index, :], train_data.iloc[test_index, :]
+            y_train, _ = train_target.iloc[train_index,], train_target.iloc[test_index,]
             self.PIPELINE.set_params(**self.best_params_)
             self.PIPELINE.fit(X=X_train, y=y_train)
-            y_pred = self.PIPELINE.predict(X_test)
-            p_micro = precision_score(y_true=y_test, y_pred=y_pred, average="micro")
-            p0 = precision_score(y_true=y_test, y_pred=y_pred, pos_label=0)
-            p1 = precision_score(y_true=y_test, y_pred=y_pred, pos_label=1)
-            X_test.loc[:, "pred_"] = y_pred
-            X_test.loc[:, "result"] = X_test.apply(lambda x: "準" if x.pred_ == x["{}_{}_result".
+            y_pred = self.PIPELINE.predict(test_data)
+            p_micro = precision_score(y_true=test_target, y_pred=y_pred, average="micro")
+            p0 = precision_score(y_true=test_target, y_pred=y_pred, pos_label=0)
+            p1 = precision_score(y_true=test_target, y_pred=y_pred, pos_label=1)
+            test_data.loc[:, "pred_"] = y_pred
+            test_data.loc[:, "result"] = test_data.apply(lambda x: "準" if x.pred_ == x["{}_{}_result".
                                             format(self.book_maker, self.type_of_bet)] else "冏",
                                             axis=1)
             if self.type_of_bet == "total":
-                X_test.loc[:, "pred"] = ["大" if i else "小" for i in y_pred]
+                test_data.loc[:, "pred"] = ["大" if i else "小" for i in y_pred]
             else:
-                X_test.loc[:, "pred"] = X_test.apply(lambda x: "主" if x.pred_ else "客", axis=1)
-            test_results = X_test[["game_time", "away_team", "home_team",
+                test_data.loc[:, "pred"] = test_data.apply(lambda x: "主" if x.pred_ else "客", axis=1)
+            test_results = test_data[["game_time", "away_team", "home_team",
                                    "{}_{}".format(self.book_maker, self.type_of_bet),
                                    "pred", "result"]]
             setattr(self, "test_results_", test_results)

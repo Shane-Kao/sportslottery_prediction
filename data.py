@@ -255,11 +255,4 @@ class Data:
 if __name__ == "__main__":
     from data import Data
     data = Data(alliance="NBA")
-    df = data.raw
-    # df = Data._get_strk(df)
-    print(df[["away_team", "home_team", "home_avg_total",
-              "away_avg_total", ]])
-    # print(df[["away_score", "home_score", "tw_total", "tw_total_result"]])
-    # print(df[["game_time", "away_score", "home_score", "oversea_diff", "oversea_diff_result"]])
-    # print(df[["game_time", "away_score", "home_score", "oversea_total", "oversea_total_result"]])
-    # print(data.history)
+    train_data = data.get_train(book_maker="tw", type_of_bet="total")
