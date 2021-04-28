@@ -1,34 +1,61 @@
-import os
+if __name__ == '__main__':
 
-import dill
-import pandas as pd
+    import os
 
-from data import Data
-from configs import MODEL_DIR
+    import dill
+    import pandas as pd
 
-alliance = "NBA"
-book_maker = "oversea"
-type_of_bet = "diff"
+    from data import Data
+    from configs import MODEL_DIR
 
-target_col = "{}_{}".format(book_maker, type_of_bet)
+    alliance = "歐洲職籃"
+    book_maker = "oversea"
+    type_of_bet = "diff"
 
-model_name = "{}_{}_{}".format(alliance, book_maker, type_of_bet)
+    target_col = "{}_{}".format(book_maker, type_of_bet)
 
-result_dict_ = dill.load(open(os.path.join(MODEL_DIR, model_name), "rb"))
-print(result_dict_['train_size'])
-print(result_dict_['test_size'])
-print(result_dict_['start_date'])
-print(result_dict_['create_time'])
-print(result_dict_['best_score'], result_dict_['p_micro'])
+    model_name = "{}_{}_{}".format(alliance, book_maker, type_of_bet)
 
-print(result_dict_['p0'])
-print(result_dict_['p1'])
-print(pd.DataFrame(result_dict_['test_results']))
-model = result_dict_['model']
+    result_dict_ = dill.load(open(os.path.join(MODEL_DIR, model_name), "rb"))
+    print(result_dict_['train_size'])
+    print(result_dict_['test_size'])
+    print(result_dict_['start_date'])
+    print(result_dict_['create_time'])
+    print(result_dict_['best_score'], result_dict_['p_micro'])
 
-data = Data(alliance=alliance)
-df = data.incoming
-df = df[~df[target_col].isnull()]
+    print('p0', result_dict_['p0'])
+    print('p1', result_dict_['p1'])
+    print(pd.DataFrame(result_dict_['test_results']))
+    model = result_dict_['model']
 
-df["pred"] = model.predict(df)
-print(df[["game_time", "away_team", "home_team", target_col, "pred", ]])
+    data = Data(alliance=alliance)
+    df = data.incoming
+    df = df[~df[target_col].isnull()]
+
+    df["pred"] = model.predict(df)
+    print(df[["game_time", "away_team", "home_team", target_col, "pred", ]])
+
+if __name__ == '__main__xx':
+    import os
+
+    import dill
+    import pandas as pd
+
+    from configs import DATA_DIR, MODEL_DIR
+
+    models = os.listdir(MODEL_DIR)
+
+
+    for model in models:
+                print(model)
+                result_dict_ = dill.load(open(os.path.join(MODEL_DIR, model), "rb"))
+                print(result_dict_['train_size'])
+                print(result_dict_['test_size'])
+                print(result_dict_['start_date'])
+                print(result_dict_['create_time'])
+                print(result_dict_['best_score'], result_dict_['p_micro'])
+
+                print('p0', result_dict_['p0'])
+                print('p1', result_dict_['p1'])
+                print(pd.DataFrame(result_dict_['test_results']))
+                print("=================================================")
