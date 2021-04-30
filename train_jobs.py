@@ -1,5 +1,7 @@
 import os
 
+from apscheduler.schedulers.blocking import BlockingScheduler
+
 from model._model import Model
 from configs import DATA_DIR
 from utils.notifier import _notifier
@@ -25,4 +27,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    scheduler = BlockingScheduler()
+    scheduler.add_job(main, 'interval', hours=3, )
+    scheduler.start()

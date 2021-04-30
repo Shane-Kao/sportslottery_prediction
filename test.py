@@ -8,7 +8,7 @@ if __name__ == '__main__':
     from data import Data
     from configs import MODEL_DIR
 
-    alliance = "歐洲職籃"
+    alliance = "NBA"
     book_maker = "oversea"
     type_of_bet = "diff"
 
@@ -57,5 +57,7 @@ if __name__ == '__main__xx':
 
                 print('p0', result_dict_['p0'])
                 print('p1', result_dict_['p1'])
-                print(pd.DataFrame(result_dict_['test_results']))
+                model = result_dict_["model"]
+                print(model.steps[-1][-1])
+                # print(pd.DataFrame(result_dict_['test_results']))
                 print("=================================================")
