@@ -9,7 +9,7 @@ if __name__ == '__main__':
     from configs import MODEL_DIR
 
     alliance = "NBA"
-    book_maker = "oversea"
+    book_maker = "tw"
     type_of_bet = "diff"
 
     target_col = "{}_{}".format(book_maker, type_of_bet)
@@ -61,3 +61,7 @@ if __name__ == '__main__xx':
                 print(model.steps[-1][-1])
                 # print(pd.DataFrame(result_dict_['test_results']))
                 print("=================================================")
+
+if __name__ == '__main__xx':
+    from train_jobs import main
+    main()

@@ -28,5 +28,5 @@ def main():
 
 if __name__ == '__main__':
     scheduler = BlockingScheduler()
-    scheduler.add_job(main, 'interval', hours=3, )
+    scheduler.add_job(main, 'interval', hours=4, )
     scheduler.start()
