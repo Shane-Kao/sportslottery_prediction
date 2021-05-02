@@ -8,8 +8,9 @@ if __name__ == '__main__':
     from data import Data
     from configs import MODEL_DIR
 
+    os.system("D:\project\sportslottery_prediction\jobs\crawler.bat")
     alliance = "NBA"
-    book_maker = "tw"
+    book_maker = "oversea"
     type_of_bet = "diff"
 
     target_col = "{}_{}".format(book_maker, type_of_bet)

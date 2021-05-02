@@ -40,12 +40,12 @@ class Data:
             if date_diff > timedelta(days=self._DAYS):
                 break
             else:
-                yield os.path.join(DATA_DIR, self.alliance, i)
+                yield os.path.join(DATA_DIR, 'data', 'playsport', self.alliance, i)
                 current_date = file_date
 
     @property
     def path(self):
-        return os.path.join(DATA_DIR, self.alliance)
+        return os.path.join(DATA_DIR, 'data', 'playsport', self.alliance)
 
     @property
     def files(self):

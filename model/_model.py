@@ -142,26 +142,3 @@ class Model:
         dill.dump(result_dict, open(self.model_path, "wb"))
         return None
 
-
-if __name__ == '__main__':
-    from model._model import Model
-    from configs import DATA_DIR
-
-    alliances = os.listdir(DATA_DIR)
-    book_makers = ['tw', 'oversea']
-    type_of_bets = ['diff', 'total']
-
-    for alliance in alliances:
-        for book_maker in book_makers:
-            for type_of_bet in type_of_bets:
-                print(alliance, book_maker, type_of_bet)
-                model = Model(
-                    alliance=alliance,
-                    book_maker=book_maker,
-                    type_of_bet=type_of_bet
-                )
-                result = model.train()
-                if result:
-                    model.save()
-
-

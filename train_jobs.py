@@ -8,7 +8,7 @@ from utils.notifier import _notifier
 
 
 def main():
-    alliances = os.listdir(DATA_DIR)
+    alliances = os.listdir(os.path.join(DATA_DIR, 'data', 'playsport'))
     book_makers = ['tw', 'oversea']
     type_of_bets = ['diff', 'total']
 
